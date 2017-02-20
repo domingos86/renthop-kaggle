@@ -1,0 +1,7 @@
+.container-fluid {
+  padding: 0;
+}
+
+#map {
+  height: calc(100vh) !important;
+}

@@ -1,0 +1,9 @@
+*.pyc
+*~
+.Rhistory
+*.jpg
+*.png
+*.jpeg
+data/train.json
+data/test.json
+
