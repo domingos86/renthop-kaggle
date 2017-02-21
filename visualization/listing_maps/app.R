@@ -17,7 +17,7 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
-  leafletOutput('map')
+  leafletOutput('map',width="100%",height="1000px")
 )
 
 # Define server logic required to draw a histogram
