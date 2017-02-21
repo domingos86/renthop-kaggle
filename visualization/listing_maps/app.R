@@ -23,13 +23,24 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
    output$map <- renderLeaflet({
-     leaflet() %>% addTiles() %>%
-       addMarkers(data = train, group = 'train', clusterOptions = markerClusterOptions(),
-                  popup = ~paste(listing_id, building_id, interest_level)) %>%
-       addMarkers(data = test, group = 'test', clusterOptions = markerClusterOptions(),
-                  popup = ~paste(listing_id, building_id)) %>%
-       addLayersControl(baseGroups = c('train', 'test'),
-                        options = layersControlOptions(collapsed = F))
+     map <- leaflet() %>% addTiles()
+     overlayGroups <- c('train_all')
+     map <- map %>% addMarkers(data = train, group = paste('train', 'all', sep = '_'),
+                               clusterOptions = markerClusterOptions(),
+                               popup = ~paste(listing_id, building_id, interest_level))
+     for(level in c('low', 'medium', 'high')) {
+       map <- map %>% addMarkers(data = train %>% filter(interest_level == level),
+                                 group = paste('train', level, sep = '_'),
+                                 clusterOptions = markerClusterOptions(),
+                                 popup = ~paste(listing_id, building_id, interest_level))
+       overlayGroups <- c(overlayGroups, paste('train', level, sep = '_'))
+     }
+     map <- map %>% addMarkers(data = test, group = 'test',
+                               clusterOptions = markerClusterOptions(),
+                               popup = ~paste(listing_id, building_id))
+     overlayGroups <- c(overlayGroups, 'test')
+     map %>% addLayersControl(baseGroups = overlayGroups,
+                              options = layersControlOptions(collapsed = F))
    })
 }
 
