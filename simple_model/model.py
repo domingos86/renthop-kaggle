@@ -15,7 +15,7 @@ import sys
 
 import numpy as np
 from pandas.io.json import read_json
-from pandas import DataFrame
+from pandas import DataFrame, get_dummies
 from sklearn.utils import shuffle
 import lasagne
 from lasagne import layers
@@ -60,18 +60,18 @@ def load(test = False, cols = COLS):
     df['features_len'] = df['features'].apply(lambda feats: sum([len([x for x in re.split(r'\W+', feat) if len(x) > 0]) for feat in feats]))
     df['num_photos'] = df['photos'].apply(len)
     # force all coordinates within NYC area
-    df['longitude'] = np.min(np.max(df['longitude'], -74.3434), -73.62)
-    df['latitude'] = np.min(np.max(df['latitude'], 40.4317), 41.0721)
+    df['longitude'] = df['longitude'].apply(bound(-74.3434, -73.62))
+    df['latitude'] = df['latitude'].apply(bound(40.4317, 41.0721))
 
     print(df.count())  # prints the number of values for each column
     
     if not test:  # only FTRAIN has any target columns
         df = df.dropna()  # drop all rows that have missing values in them
-        X = np.array(df[cols], dtype = np.float)
-        y = np.array(pd.get_dummies(df['interest_level'])[OUTPUT_COLS], np.float32)
+        X = np.array(df[cols], dtype = np.float32)
+        y = np.array(get_dummies(df['interest_level'])[OUTPUT_COLS], np.float32)
         X, y = shuffle(X, y, random_state=42)  # shuffle train data
     else:
-        X = np.array(df[cols], dtype = np.float)
+        X = np.array(df[cols], dtype = np.float32)
         y = df['listing_id'].as_matrix()
 
     return X, y
@@ -138,12 +138,12 @@ def neural_net(epochs=3000, initial_rate=0.04):
         objective_loss_function = categorical_crossentropy)
 
 def predict(net, transform, save_to='submission.csv', cols = COLS):
-    X, ids = load(test=True, cols)
+    X, ids = load(test = True, cols = cols)
     X = normalize_X(X, transform)
     
     y_pred = net.predict(X)
 
-    df = DataFrame(np.hstack(ids, y_pred) columns=['listing_id'] + OUTPUT_COLS)
+    df = DataFrame(np.hstack(ids, y_pred), columns=['listing_id'] + OUTPUT_COLS)
     df.to_csv(save_to, index=False)
     print("Wrote {}".format(save_to))
 
@@ -210,3 +210,6 @@ def load_net(file_name):
 
 def float32(k):
     return np.cast['float32'](k)
+
+def bound(m, M):
+    return lambda x: max(min(x, M), m)
