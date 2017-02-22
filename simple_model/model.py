@@ -60,7 +60,7 @@ def load(test = False, cols = COLS):
     df['features_len'] = df['features'].apply(lambda feats: sum([len([x for x in re.split(r'\W+', feat) if len(x) > 0]) for feat in feats]))
     df['num_photos'] = df['photos'].apply(len)
     # force all coordinates within NYC area
-    df['longitude'] = np.min(np.max(df['longitude'], −74.3434), −73.62)
+    df['longitude'] = np.min(np.max(df['longitude'], -74.3434), -73.62)
     df['latitude'] = np.min(np.max(df['latitude'], 40.4317), 41.0721)
 
     print(df.count())  # prints the number of values for each column
