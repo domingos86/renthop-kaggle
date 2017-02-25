@@ -6,4 +6,5 @@
 *.jpeg
 data/train.json
 data/test.json
+.ipynb_checkpoints
 
