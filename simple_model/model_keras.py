@@ -27,7 +27,6 @@ import re
 FTRAIN = 'data/train.json'
 FTEST = 'data/test.json'
 
-sys.setrecursionlimit(10000)  # for pickle...
 np.random.seed(42)
 
 COLS = ['bathrooms', 'bedrooms', 'latitude', 'longitude', 'price', 'price_per_bathroom', 'price_per_bedroom', 'day_of_month',

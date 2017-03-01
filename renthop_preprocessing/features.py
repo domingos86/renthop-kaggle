@@ -87,4 +87,3 @@ def get_dummies_from_features(series, dtype = np.float32):
     for i, (key, value) in enumerate(FEATURES_MAP.iteritems()):
         dummies[:, i] = series.apply(_search_regex(value))
     return dummies
-    
