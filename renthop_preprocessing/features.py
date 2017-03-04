@@ -84,6 +84,6 @@ def _search_regex(regexes):
 def get_dummies_from_features(series, dtype = np.float32):
     series = series.apply(lambda x: _extract_features(x, _parser))
     dummies = np.zeros((len(series), len(FEATURES_MAP)), dtype = dtype)
-    for i, (key, value) in enumerate(FEATURES_MAP.iteritems()):
-        dummies[:, i] = series.apply(_search_regex(value))
+    for i, key in enumerate(FEATURES_MAP):
+        dummies[:, i] = series.apply(_search_regex(FEATURES_MAP[key]))
     return dummies
