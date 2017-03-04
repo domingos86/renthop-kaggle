@@ -368,6 +368,19 @@ class Dummifier(object):
         else:
             return dummies
 
+class CategoricalFilter(object):
+    
+    def __init__(self, top_categories = 999):
+        self.top_categories = top_categories
+    
+    def fit(self, series):
+        counts = series.value_counts()
+        self.category_mapper = dict(zip(counts.index[:self.top_categories],
+                                    range(1, self.top_categories + 1)))
+    
+    def transform(self, series):
+        return series.apply(lambda key: self.category_mapper.get(key, 0))
+        
 class FeaturesDummifier(object):
     
     def __init__(self):
