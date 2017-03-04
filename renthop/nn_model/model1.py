@@ -9,15 +9,19 @@ import os
 import sys
 
 import numpy as np
+from pandas import DataFrame
 
-from ..renthop_preprocessing import shuffle
+from ..preprocessing import shuffle
 
-from keras.layers import Dense, Dropout, Embedding, InputLayer, Merge
+from keras.layers import Dense, Dropout, Embedding, InputLayer, Merge, Flatten
 from keras.optimizers import Adadelta
+from keras.regularizers import l2
 from keras.models import Sequential, load_model
 from keras import backend as K
 
 import theano
+
+OUTPUT_COLS = ['high', 'medium', 'low']
 
 def fit(X, y, plot=False, epochs=3000, save_to=None):
     '''Trains a neural network for all the labels.
@@ -51,11 +55,14 @@ def fit(X, y, plot=False, epochs=3000, save_to=None):
 
 def neural_net(initial_rate=0.04):
     embedding = Sequential()
-    embeddind.add(Embedding(1000, 10, dropout = 0.5, name = 'managers'))
+    embedding.add(InputLayer((1,), name = 'managers'))
+    embedding.add(Embedding(1000, 10, input_length = 1))
+    embedding.add(Flatten())
+    embedding.add(Dropout(0.3))
     main_input = Sequential()
-    main_input.add(InputLayer(80, name = 'main'))
+    main_input.add(InputLayer((80,), name = 'main'))
     net = Sequential()
-    net.add(Merge([embedding, main_input], mode = 'concat'))
+    net.add(Merge([main_input, embedding], mode = 'concat'))
     net.add(Dense(800, activation = 'relu'))
     net.add(Dropout(0.2))
     net.add(Dense(1000, activation = 'relu'))
@@ -66,13 +73,11 @@ def neural_net(initial_rate=0.04):
     net.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
     return net
 
-def predict(net, transform, save_to='submission.csv'):
-    X, ids = load(test = True, cols = cols)
-    X = normalize_X(X, transform)
-    
+def predict(net, X, ids, save_to='submission.csv'):
     y_pred = net.predict(X)
 
-    df = DataFrame(np.hstack(ids, y_pred), columns=['listing_id'] + OUTPUT_COLS)
+    df = DataFrame(np.hstack([ids.reshape(-1, 1), y_pred]), columns=['listing_id'] + OUTPUT_COLS)
+    df['listing_id'] = df['listing_id'].astype('int')
     df.to_csv(save_to, index=False)
     print("Wrote {}".format(save_to))
 

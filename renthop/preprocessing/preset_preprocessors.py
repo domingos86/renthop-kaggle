@@ -1,4 +1,5 @@
 from sklearn import preprocessing
+import numpy as np
 import loaders
 
 def features_sentiment_preprocessor():
@@ -18,8 +19,11 @@ def features_sentiment_preprocessor():
     preprocessor.set_consumer(merger)
     preprocessor.with_pipeline('merged').set_loader(merger).add_operation(loaders.ColumnDrop('listing_id'))
     preprocessor.add_operation(loaders.ToNdarray()).add_operation(preprocessing.StandardScaler())
-    preprocessor.with_pipeline('response').set_loader(json_loader.select_loader('interest_level'))
+    preprocessor.with_pipeline('response').set_loader(json_loader.select_loader('interest_level'), only_train = True)
     preprocessor.add_operation(loaders.Dummifier(output_cols = ['high', 'medium', 'low'])).add_operation(loaders.ToNdarray())
+    preprocessor.add_operation(loaders.Reshaper((-1, 1)))
+    preprocessor.with_pipeline('ids').set_loader(json_loader.select_loader('listing_id'))
+    preprocessor.add_operation(loaders.ToNdarray(dtype = np.int64))
     return preprocessor
 
 def features_sentiment_manager_preprocessor():
@@ -39,8 +43,10 @@ def features_sentiment_manager_preprocessor():
     preprocessor.set_consumer(merger)
     preprocessor.with_pipeline('merged').set_loader(merger).add_operation(loaders.ColumnDrop('listing_id'))
     preprocessor.add_operation(loaders.ToNdarray()).add_operation(preprocessing.StandardScaler())
-    preprocessor.with_pipeline('response').set_loader(json_loader.select_loader('interest_level'))
+    preprocessor.with_pipeline('response').set_loader(json_loader.select_loader('interest_level'), only_train = True)
     preprocessor.add_operation(loaders.Dummifier(output_cols = ['high', 'medium', 'low'])).add_operation(loaders.ToNdarray())
     preprocessor.with_pipeline('managers').set_loader(json_loader.select_loader('manager_id'))
-    preprocessor.add_operation(loaders.CategoricalFilter(1000))
+    preprocessor.add_operation(loaders.CategoricalFilter(999)).add_operation(loaders.ToNdarray(dtype = np.int64, outshape = (-1, 1)))
+    preprocessor.with_pipeline('ids').set_loader(json_loader.select_loader('listing_id'))
+    preprocessor.add_operation(loaders.ToNdarray(dtype = np.int64))
     return preprocessor

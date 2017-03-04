@@ -245,14 +245,18 @@ class ColumnDrop(object):
         return data.drop(self.columns, axis = 1)
 
 class ToNdarray(object):
-    def __init__(self, dtype = np.float32):
+    def __init__(self, dtype = np.float32, outshape = None):
         self.dtype = dtype
+        self.outshape = outshape
     
     def fit(self, data):
         pass
 
     def transform(self, data):
-        return np.array(data, dtype = self.dtype)
+        data = np.array(data, dtype = self.dtype)
+        if self.outshape:
+            data = data.reshape(self.outshape)
+        return data
 
 class Slicer(object):
     def __init__(self, rowslice, colslice):
