@@ -51,10 +51,10 @@ def fit(X, y, plot=False, epochs=3000, save_to=None):
 
 def neural_net(initial_rate=0.04):
     net = Sequential()
-    net.add(Dense(800, input_shape = (14,), activation = 'relu'))
+    net.add(Dense(800, input_shape = (80,), activation = 'relu'))
     net.add(Dropout(0.2))
-    net.add(Dense(100, activation = 'relu'))
-    net.add(Dropout(0.2))
+    net.add(Dense(1000, activation = 'relu'))
+    net.add(Dropout(0.5))
     net.add(Dense(200, activation = 'relu'))
     net.add(Dense(3, activation = 'softmax'))
     adadelta = Adadelta(lr = initial_rate)
