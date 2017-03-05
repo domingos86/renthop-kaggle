@@ -4,10 +4,12 @@ import numpy as np
 from pandas.io.json import read_json
 from pandas import DataFrame, get_dummies, read_csv
 
-from sklearn.utils import shuffle
+from sklearn.utils import shuffle, resample
 
 from datetime import datetime
 import re, os
+
+from PIL import Image
 
 try:
     import cPickle as pickle
@@ -158,9 +160,10 @@ class Preprocessor(object):
 
 class BaseLoader(object):
 
-    def __init__(self, ftrain, ftest):
+    def __init__(self, ftrain, ftest, sample = None):
         self.ftrain = ftrain
         self.ftest = ftest
+        self.sample = sample
         self.clear()
 
     def __call__(self, test = False):
@@ -171,6 +174,8 @@ class BaseLoader(object):
         else:
             if self.train is None:
                 self.train = self._load_dataframe(self.ftrain)
+                if self.sample:
+                    self.train = self.train.sample(self.sample)
             return self.train
 
     def select_loader(self, columns):
@@ -197,8 +202,9 @@ class BaseLoader(object):
 
 class JSONLoader(BaseLoader):
 
-    def __init__(self, ftrain = 'data/train.json', ftest = 'data/test.json'):
-        super(JSONLoader, self).__init__(ftrain, ftest)
+    def __init__(self, ftrain = 'data/train.json', ftest = 'data/test.json',
+                 sample = None):
+        super(JSONLoader, self).__init__(ftrain, ftest, sample)
 
     @staticmethod
     def _load_dataframe(fname):
@@ -317,8 +323,16 @@ class GetTopPhotoMerger(BasePipelineMerger):
         super(GetTopPhotoMerger, self).__init__([values, urls])
         self.values = values
         self.urls = urls
+        self.train_result = None
+        self.test_result = None
     
     def do_merge(self, test = False):
+        if test:
+            if self.test_result:
+                return self.test_result
+        else:
+            if self.train_result:
+                return self.train_result
         images = self.data[self.values]
         images['sharpness'] = np.sqrt(images['sharpness'])
         aggregates = images.groupby('listing_id')[['width', 'height', 'sharpness']].aggregate(np.mean).reset_index()
@@ -328,10 +342,60 @@ class GetTopPhotoMerger(BasePipelineMerger):
         first_photos = urls[['listing_id', 'photo_name']].merge(images, how = 'inner', on = ['listing_id', 'photo_name'])
         first_photos = first_photos.rename(columns = {'width': 'cover_width', 'height': 'cover_height', 'sharpness': 'cover_sharpness'})
         result = urls[['listing_id']].merge(aggregates, how = 'left', on = 'listing_id')
-        result = result.merge(first_photos[['listing_id', 'cover_width', 'cover_height', 'cover_sharpness']],
+        result = result.merge(first_photos[['listing_id', 'photo_name', 'cover_width', 'cover_height', 'cover_sharpness']],
                                 how = 'left', on = 'listing_id')
         result = result.fillna(0.0)
+        if test:
+            self.test_result = result
+        else:
+            self.train_result = result
         return result
+    
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        del odict['test_result']
+        del odict['train_result']
+        return odict
+
+    def __setstate__(self, idict):
+        self.__dict__.update(idict)
+        self.train_result = None
+        self.test_result = None
+
+class PhotoLoader(object):
+    def consume(self, data, pipeline):
+        self.data = data
+    
+    def __call__(self, test = False):
+        if test:
+            # Test data doesn't get sampled, so it should be loaded by batches
+            return data
+        else:
+            images = np.zeros((data.shape[0], 3, 100, 100), dtype = np.float32)
+            for i, row in enumerate(data.iterrows()):
+                images[i] = self._get_image(row[1]['listing_id'], row[1]['photo_name'])
+            images = images / 255.0
+            return images
+    
+    @staticmethod
+    def _get_image(listing_id, photo_name):
+        if len(photo_name) == 0:
+            return np.zeros((3, 100, 100))
+        path = 'data/images_compressed/%d/%d/%s' % (listing_id / 1000,
+                        listing_id, photo_name)
+        im = Image.open(path)
+        pixels = np.array(im.getdata()).swapaxes(0, 1).reshape(-1, 100, 100)
+        if pixels.shape[0] == 1:
+            pixels = np.repeat(pixels, 3, axis = 0)
+        return pixels.astype(np.float32)
+
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        del odict['data']
+        return odict
+
+    def __setstate__(self, idict):
+        self.__dict__.update(idict)
 
 class DateTimeExtractor(object):
     operations = {
