@@ -42,7 +42,7 @@ def fit(X, y, plot=False, epochs=3000, save_to=None):
     
     X, y = shuffle(X, y)
     
-    net = neural_net()
+    net = neural_net2()
 
     history = net.fit(X, y, nb_epoch = epochs, batch_size = 128,
                       validation_split = 0.2)
@@ -53,7 +53,7 @@ def fit(X, y, plot=False, epochs=3000, save_to=None):
         plot_net(history)
     return net, history
 
-def neural_net(initial_rate=0.04):
+def neural_net1(initial_rate=0.04):
     embedding = Sequential()
     embedding.add(InputLayer((1,), name = 'managers'))
     embedding.add(Embedding(1000, 10, input_length = 1))
@@ -61,6 +61,26 @@ def neural_net(initial_rate=0.04):
     embedding.add(Dropout(0.3))
     main_input = Sequential()
     main_input.add(InputLayer((80,), name = 'main'))
+    net = Sequential()
+    net.add(Merge([main_input, embedding], mode = 'concat'))
+    net.add(Dense(800, activation = 'relu'))
+    net.add(Dropout(0.2))
+    net.add(Dense(1000, activation = 'relu'))
+    net.add(Dropout(0.5))
+    net.add(Dense(200, activation = 'relu'))
+    net.add(Dense(3, activation = 'softmax'))
+    adadelta = Adadelta(lr = initial_rate)
+    net.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
+    return net
+
+def neural_net2(initial_rate=0.04):
+    embedding = Sequential()
+    embedding.add(InputLayer((1,), name = 'managers'))
+    embedding.add(Embedding(1000, 10, input_length = 1))
+    embedding.add(Flatten())
+    embedding.add(Dropout(0.3))
+    main_input = Sequential()
+    main_input.add(InputLayer((86,), name = 'main'))
     net = Sequential()
     net.add(Merge([main_input, embedding], mode = 'concat'))
     net.add(Dense(800, activation = 'relu'))

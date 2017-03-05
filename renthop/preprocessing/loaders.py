@@ -1,4 +1,3 @@
-
 import features
 
 import numpy as np
@@ -298,19 +297,41 @@ class BasePipelineMerger(object):
 
 class PandasColumnMerger(BasePipelineMerger):
 
-    def __init__(self, input_pipelines, on = None):
+    def __init__(self, input_pipelines, on = None, how = 'outer'):
         super(PandasColumnMerger, self).__init__(input_pipelines)
         self.on = on
+        self.how = how
 
     def do_merge(self, test = False):
         if self.on:
             df = self.data[self.input_pipelines[0]]
             for pipeline in self.input_pipelines[1:]:
-                df = df.merge(self.data[pipeline], how = 'outer',
+                df = df.merge(self.data[pipeline], how = self.how,
                               on = self.on)
             return df
         else:
             return pd.concat(self.data.values(), ignore_index = True)
+
+class GetTopPhotoMerger(BasePipelineMerger):
+    def __init__(self, values, urls):
+        super(GetTopPhotoMerger, self).__init__([values, url])
+        self.values = values
+        self.urls = urls
+    
+    def do_merge(self, test = False):
+        images = data[self.values]
+        images['sharpness'] = np.sqrt(images['sharpness'])
+        aggregates = images.groupby('listing_id')[['width', 'height', 'sharpness']].aggregate(np.mean).reset_index()
+        aggregates = aggregates.rename(columns = {'width': 'avg_width', 'height': 'avg_height', 'sharpness': 'avg_sharpness'})
+        urls = data[self.urls]
+        urls['photo_name'] = urls['photo'].apply(lambda x: x[0] if len(x) > 0 else '').apply(lambda x: re.sub(r'^.*/', '', x))
+        first_photos = urls[['listing_id', 'photo_name']].merge(images, how = 'inner', on = ['listing_id', 'photo_name'])
+        first_photos = first_photos.rename(columns = {'width': 'cover_width', 'height': 'cover_height', 'sharpness': 'cover_sharpness'})
+        result = urls[['listing_id']].merge(aggregates, how = 'left', on = 'listing_id')
+        result = result.merge(first_photos[['listing_id', 'cover_width', 'cover_height', 'cover_sharpness']],
+                                how = 'left', on = 'listing_id')
+        result = result.fillna(0.0)
+        return result
 
 class DateTimeExtractor(object):
     operations = {
