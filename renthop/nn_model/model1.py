@@ -56,7 +56,7 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained', final = False):
     callbacks = [checkpoint, logger, earlystopping, lrreducer]
     
     history = net.fit(X, y, nb_epoch = epochs, batch_size = 128,
-                      validation_split = 0 if final else 0.2,
+                      validation_split = 0 if final else 0.1,
                       callbacks = callbacks)
 
     if plot:
