@@ -17,13 +17,14 @@ from keras.layers import Dense, Dropout, Embedding, InputLayer, Merge, Flatten
 from keras.optimizers import Adadelta
 from keras.regularizers import l2
 from keras.models import Sequential, load_model
+from keras.callbacks import CSVLogger, ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from keras import backend as K
 
 import theano
 
 OUTPUT_COLS = ['high', 'medium', 'low']
 
-def fit(X, y, plot=False, epochs=3000, save_to=None):
+def fit(X, y, plot=False, epochs=3000, save_to='nn_trained', final = False):
     '''Trains a neural network for all the labels.
     
     It only uses inputs without missing labels.
@@ -43,12 +44,21 @@ def fit(X, y, plot=False, epochs=3000, save_to=None):
     X, y = shuffle(X, y)
     
     net = neural_net2()
-
+    
+    if not os.path.exists(save_to):
+        os.makedirs(save_to)
+    save_to = save_to + '/'
+    
+    earlystopping = EarlyStopping(patience = 20)
+    checkpoint = ModelCheckpoint(save_to + 'net.h5', save_best_only = True)
+    logger = CSVLogger(save_to + 'history.log')
+    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 10)
+    callbacks = [checkpoint, logger, earlystopping, lrreducer]
+    
     history = net.fit(X, y, nb_epoch = epochs, batch_size = 128,
-                      validation_split = 0.2)
+                      validation_split = 0 if final else 0.2,
+                      callbacks = callbacks)
 
-    if save_to:
-        net.save(save_to)
     if plot:
         plot_net(history)
     return net, history
@@ -103,8 +113,8 @@ def predict(net, X, ids, save_to='submission.csv'):
 
 def plot_net(history, save_to = None):
     from matplotlib import pyplot
-    train_loss = history.history.items()[0][1]
-    valid_loss = history.history.items()[1][1]
+    train_loss = history.history['loss']
+    valid_loss = history.history['val_loss']
     pyplot.plot(train_loss, linewidth=3, label="train")
     pyplot.plot(valid_loss, linewidth=3, label="valid")
     pyplot.grid()
@@ -126,6 +136,3 @@ def save_net(net, file_name):
 
 def load_net(file_name):
     return load_model(file_name)
-
-def float32(k):
-    return np.cast['float32'](k)
