@@ -21,7 +21,6 @@ def features_sentiment_preprocessor():
     preprocessor.add_operation(loaders.ToNdarray()).add_operation(preprocessing.StandardScaler())
     preprocessor.with_pipeline('response').set_loader(json_loader.select_loader('interest_level'), only_train = True)
     preprocessor.add_operation(loaders.Dummifier(output_cols = ['high', 'medium', 'low'])).add_operation(loaders.ToNdarray())
-    preprocessor.add_operation(loaders.Reshaper((-1, 1)))
     preprocessor.with_pipeline('ids').set_loader(json_loader.select_loader('listing_id'))
     preprocessor.add_operation(loaders.ToNdarray(dtype = np.int64))
     return preprocessor

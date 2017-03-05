@@ -81,7 +81,7 @@ def predict(net, X, ids, save_to='submission.csv'):
     df.to_csv(save_to, index=False)
     print("Wrote {}".format(save_to))
 
-def plot_net(history):
+def plot_net(history, save_to = None):
     from matplotlib import pyplot
     train_loss = history.history.items()[0][1]
     valid_loss = history.history.items()[1][1]
@@ -94,7 +94,10 @@ def plot_net(history):
     pyplot.ylim(4e-1, 1)
     pyplot.yscale("log")
     try:
-        pyplot.show()
+        if save_to:
+            pyplot.savefig(save_to)
+        else:
+            pyplot.show()
     except RuntimeError as e:
         print "Unable to show plot", e
 
