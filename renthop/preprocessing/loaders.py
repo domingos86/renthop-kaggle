@@ -314,17 +314,17 @@ class PandasColumnMerger(BasePipelineMerger):
 
 class GetTopPhotoMerger(BasePipelineMerger):
     def __init__(self, values, urls):
-        super(GetTopPhotoMerger, self).__init__([values, url])
+        super(GetTopPhotoMerger, self).__init__([values, urls])
         self.values = values
         self.urls = urls
     
     def do_merge(self, test = False):
-        images = data[self.values]
+        images = self.data[self.values]
         images['sharpness'] = np.sqrt(images['sharpness'])
         aggregates = images.groupby('listing_id')[['width', 'height', 'sharpness']].aggregate(np.mean).reset_index()
         aggregates = aggregates.rename(columns = {'width': 'avg_width', 'height': 'avg_height', 'sharpness': 'avg_sharpness'})
-        urls = data[self.urls]
-        urls['photo_name'] = urls['photo'].apply(lambda x: x[0] if len(x) > 0 else '').apply(lambda x: re.sub(r'^.*/', '', x))
+        urls = self.data[self.urls]
+        urls['photo_name'] = urls['photos'].apply(lambda x: x[0] if len(x) > 0 else '').apply(lambda x: re.sub(r'^.*/', '', x))
         first_photos = urls[['listing_id', 'photo_name']].merge(images, how = 'inner', on = ['listing_id', 'photo_name'])
         first_photos = first_photos.rename(columns = {'width': 'cover_width', 'height': 'cover_height', 'sharpness': 'cover_sharpness'})
         result = urls[['listing_id']].merge(aggregates, how = 'left', on = 'listing_id')
