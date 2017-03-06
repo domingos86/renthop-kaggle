@@ -76,7 +76,7 @@ def neural_net1(initial_rate=0.04):
     img_merged = Sequential()
     img_merged.add(Merge([photo, img_size], mode = 'concat')) #3203
     img_merged.add(Dense(20, activation = 'sigmoid')) #20
-    img_merged.add(Drouput(0.2))
+    img_merged.add(Dropout(0.2))
     embedding = Sequential()
     embedding.add(InputLayer((1,), name = 'managers'))
     embedding.add(Embedding(1000, 10, input_length = 1))
@@ -100,8 +100,8 @@ def predict(net, X, ids, photo_data, save_to='submission.csv', load_batch_size =
     photo_loader = loaders.PhotoLoader()
     y_pred = np.zeros((0, 3), dtype = float32)
     for i in range(0, ids.shape[0], load_batch_size):
-        X_ = _slice_dict(X, i:(i + load_batch_size))
-        photo_loader.consume(X_['photo_cover'])
+        X_ = _slice_dict(X, slice(i,(i + load_batch_size)))
+        photo_loader.consume(X_['photo_cover'], None)
         X_['photo_cover'] = photo_loader()
         y_pred = np.vstack((y_pred, net.predict(X_)))
 

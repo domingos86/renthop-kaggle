@@ -328,10 +328,10 @@ class GetTopPhotoMerger(BasePipelineMerger):
     
     def do_merge(self, test = False):
         if test:
-            if self.test_result:
+            if self.test_result is not None:
                 return self.test_result
         else:
-            if self.train_result:
+            if self.train_result is not None:
                 return self.train_result
         images = self.data[self.values]
         images['sharpness'] = np.sqrt(images['sharpness'])
@@ -344,6 +344,7 @@ class GetTopPhotoMerger(BasePipelineMerger):
         result = urls[['listing_id']].merge(aggregates, how = 'left', on = 'listing_id')
         result = result.merge(first_photos[['listing_id', 'photo_name', 'cover_width', 'cover_height', 'cover_sharpness']],
                                 how = 'left', on = 'listing_id')
+        result['photo_name'] = result['photo_name'].fillna('')
         result = result.fillna(0.0)
         if test:
             self.test_result = result
@@ -369,10 +370,10 @@ class PhotoLoader(object):
     def __call__(self, test = False):
         if test:
             # Test data doesn't get sampled, so it should be loaded by batches
-            return data
+            return self.data
         else:
-            images = np.zeros((data.shape[0], 3, 100, 100), dtype = np.float32)
-            for i, row in enumerate(data.iterrows()):
+            images = np.zeros((self.data.shape[0], 3, 100, 100), dtype = np.float32)
+            for i, row in enumerate(self.data.iterrows()):
                 images[i] = self._get_image(row[1]['listing_id'], row[1]['photo_name'])
             images = images / 255.0
             return images
@@ -384,7 +385,7 @@ class PhotoLoader(object):
         path = 'data/images_compressed/%d/%d/%s' % (listing_id / 1000,
                         listing_id, photo_name)
         im = Image.open(path)
-        pixels = np.array(im.getdata()).swapaxes(0, 1).reshape(-1, 100, 100)
+        pixels = np.array(im.getdata()).reshape(10000, -1).swapaxes(0, 1).reshape(-1, 100, 100)
         if pixels.shape[0] == 1:
             pixels = np.repeat(pixels, 3, axis = 0)
         return pixels.astype(np.float32)
