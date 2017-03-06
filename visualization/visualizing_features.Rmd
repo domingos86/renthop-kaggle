@@ -206,4 +206,20 @@ for(col in features_cols) {
     ggsave(paste0('feature_plots/', col, '.png'))
 }
 ```
+```{r}
+train_sentiment <- read.csv('../data/sentiment_train.csv')
+sentiment_cols <- setdiff(colnames(train_sentiment), c('listing_id'))
+train_sentiment <- train_sentiment %>% inner_join(train_data %>%
+                                                  select(listing_id, interest_level),
+                                                by = 'listing_id')
+library(ggmosaic)
+for(col in sentiment_cols) {
+  data_to_plot <- train_sentiment[,c('listing_id', col, 'interest_level')]
+  colnames(data_to_plot) <- c('listing_id', 'sentiment', 'interest_level')
+  ggplot(aes(x = product(interest_level, sentiment), fill = interest_level),
+         data = data_to_plot) +
+    geom_mosaic() + xlab(col) + ylab('Interest Level') +
+    ggsave(paste0('sentiment_plots/', col, '.png'))
+}
+```
 
