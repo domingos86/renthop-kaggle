@@ -353,13 +353,13 @@ class GetTopPhotoMerger(BasePipelineMerger):
         return result
     
     def __getstate__(self):
-        odict = self.__dict__.copy()
+        odict = super(GetTopPhotoMerger, self).__getstate__()
         del odict['test_result']
         del odict['train_result']
         return odict
 
     def __setstate__(self, idict):
-        self.__dict__.update(idict)
+        super(GetTopPhotoMerger, self).__setstate__(idict)
         self.train_result = None
         self.test_result = None
 
