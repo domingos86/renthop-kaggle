@@ -190,3 +190,20 @@ g + geom_bar(aes(x = round(bathrooms), fill = interest_level), position = 'fill'
 g + geom_bar(aes(x = month, fill = interest_level), position = 'dodge')
 ```
 
+```{r}
+train_features <- read.csv('../data/features_train.csv')
+features_cols <- setdiff(colnames(train_features), c('listing_id'))
+train_features <- train_features %>% inner_join(train_data %>%
+                                                  select(listing_id, interest_level),
+                                                by = 'listing_id')
+library(ggmosaic)
+for(col in features_cols) {
+  data_to_plot <- train_features[,c('listing_id', col, 'interest_level')]
+  colnames(data_to_plot) <- c('listing_id', 'feature', 'interest_level')
+  ggplot(aes(x = product(interest_level, feature), fill = interest_level),
+         data = data_to_plot) +
+    geom_mosaic() + xlab(col) + ylab('Interest Level') +
+    ggsave(paste0('feature_plots/', col, '.png'))
+}
+```
+
