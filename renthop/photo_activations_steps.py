@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import re
+import re, sys
 from renthop.preprocessing import preset_preprocessors
 from renthop.nn_model import convolutional
 
@@ -24,6 +24,7 @@ from renthop.preprocessing import loaders
 photo_loader = loaders.PhotoLoader()
 
 # find activations for train data
+image_data = pd.read_csv('data/images_train.csv')
 data_train = pd.read_json('data/train.json')
 data_train = data_train[['listing_id', 'photos']]
 data_train['photo_name'] = data_train['photos'].apply(lambda x: x[0] if len(x) > 0 else '').apply(lambda x: re.sub(r'^.*/', '', x))
@@ -41,11 +42,15 @@ for i in range(0, photo_names.shape[0], 1000):
     photo_loader.consume(photo_names.iloc[i:(i + 1000), :], None)
     X_['photo_cover'] = photo_loader()
     activations = np.vstack((activations, conv_net.predict(X_)))
+    sys.stdout.write('.')
+    sys.stdout.flush()
+print ""
 df = pd.concat([photo_names[['listing_id']], pd.DataFrame(activations)], axis = 1)
 df.to_csv('data/images_activations_train.csv', index = False)
 
 # find activations for test data
 data_test = pd.read_json('data/test.json')
+image_data = pd.read_csv('data/images_test.csv')
 data_test = data_test[['listing_id', 'photos']]
 data_test['photo_name'] = data_test['photos'].apply(lambda x: x[0] if len(x) > 0 else '').apply(lambda x: re.sub(r'^.*/', '', x))
 data_test = data_test.drop('photos', axis = 1)
@@ -62,5 +67,8 @@ for i in range(0, photo_names.shape[0], 1000):
     photo_loader.consume(photo_names.iloc[i:(i + 1000), :], None)
     X_['photo_cover'] = photo_loader()
     activations = np.vstack((activations, conv_net.predict(X_)))
+    sys.stdout.write('.')
+    sys.stdout.flush()
+print ""
 df = pd.concat([photo_names[['listing_id']], pd.DataFrame(activations)], axis = 1)
 df.to_csv('data/images_activations_test.csv', index = False)

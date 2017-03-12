@@ -41,7 +41,7 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
     
     X, y = shuffle(X, y)
     
-    net = neural_net1()
+    net = neural_net2()
     
     if not os.path.exists(save_to):
         os.makedirs(save_to)
@@ -95,6 +95,43 @@ def neural_net1(initial_rate=0.04):
     adadelta = Adadelta(lr = initial_rate)
     net.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
     return net
+
+def neural_net2(initial_rate=0.04):
+    photo = Sequential()
+    photo.add(InputLayer((3, 100, 100), name = 'photo_cover')) #3*100*100
+    photo.add(Convolution2D(32, 5, 5, activation = 'relu')) #32*96*96
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #32*48*48
+    photo.add(Convolution2D(64, 3, 3, activation = 'relu')) #64*46*46
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #64*23*23
+    photo.add(Convolution2D(32, 4, 4, activation = 'relu')) #32*20*20
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #32*10*10
+    photo.add(Flatten())
+    img_size = Sequential()
+    img_size.add(InputLayer((3,), name = 'photo_cover_stats'))
+    img_merged = Sequential()
+    img_merged.add(Merge([photo, img_size], mode = 'concat')) #3203
+    img_merged.add(Dense(20, activation = 'relu')) #20
+    img_merged.add(Dropout(0.2))
+    embedding = Sequential()
+    embedding.add(InputLayer((1,), name = 'managers'))
+    embedding.add(Embedding(1000, 10, input_length = 1))
+    embedding.add(Flatten())
+    embedding.add(Dropout(0.3))
+    main_input = Sequential()
+    main_input.add(InputLayer((83,), name = 'main'))
+    net = Sequential()
+    net.add(Merge([main_input, embedding], mode = 'concat'))
+    net.add(Dense(780, activation = 'relu'))
+    net.add(Dropout(0.2))
+    net2 = Sequential()
+    net2.add(Merge([net, img_merged], mode = 'concat'))
+    net2.add(Dense(1000, activation = 'relu'))
+    net2.add(Dropout(0.5))
+    net2.add(Dense(200, activation = 'relu'))
+    net2.add(Dense(3, activation = 'softmax'))
+    adadelta = Adadelta(lr = initial_rate)
+    net2.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
+    return net2
 
 def predict(net, X, ids, photo_data, save_to='submission.csv', load_batch_size = 1000):
     photo_loader = loaders.PhotoLoader()
