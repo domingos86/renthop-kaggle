@@ -35,8 +35,8 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
         finishes training.
     epochs -- (int, 3000) the maximum number of epochs for which the
         network should train.
-    save_to -- (str, 'nn_trained') name of the file to which the network will be
-        pickled.
+    save_to -- (str, 'nn_trained') name of the directory in which the
+        training history and network are saved.
     '''
     
     X, y = shuffle(X, y)
@@ -56,6 +56,41 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
     history = net.fit(X, y, nb_epoch = epochs, batch_size = 128,
                       validation_split = 0.1,
                       callbacks = callbacks)
+
+    if plot:
+        plot_net(history)
+    return net, history
+    
+def fit_generator(train_generator, valid_generator = None, plot=False,
+                        epochs=3000, save_to='nn_trained'):
+    '''Trains a neural network for all the labels.
+        
+    Keyword arguments:
+    plot -- (bool, False) if true, a plot of the training and validation
+        errors at the end of each epoch will be shown once the network
+        finishes training.
+    epochs -- (int, 3000) the maximum number of epochs for which the
+        network should train.
+    save_to -- (str, 'nn_trained') name of the directory in which the
+        training history and network are saved.
+    '''
+    
+    net = neural_net2()
+    
+    if not os.path.exists(save_to):
+        os.makedirs(save_to)
+    save_to = save_to + '/'
+    
+    earlystopping = EarlyStopping(patience = 50)
+    checkpoint = ModelCheckpoint(save_to + 'net.h5', save_best_only = True)
+    logger = CSVLogger(save_to + 'history.log')
+    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 10)
+    callbacks = [checkpoint, logger, earlystopping, lrreducer]
+    
+    history = net.fit_generator(train_generator, train_generator.n_samples(),
+            nb_epoch = epochs, callbacks = callbacks, validation_data = valid_generator,
+            nb_val_samples = valid_generator.n_samples() if valid_generator is not None else None,
+            max_q_size=10, nb_worker=5, pickle_safe = True)
 
     if plot:
         plot_net(history)
@@ -142,6 +177,14 @@ def predict(net, X, ids, photo_data, save_to='submission.csv', load_batch_size =
         X_['photo_cover'] = photo_loader()
         y_pred = np.vstack((y_pred, net.predict(X_)))
 
+    df = DataFrame(np.hstack([ids.reshape(-1, 1), y_pred]), columns=['listing_id'] + OUTPUT_COLS)
+    df['listing_id'] = df['listing_id'].astype('int')
+    df.to_csv(save_to, index=False)
+    print("Wrote {}".format(save_to))
+
+def predict_generator(net, generator, ids, save_to='submission.csv'):
+    y_pred = net.predict_generator(generator, val_samples = generator.n_samples(),
+                            max_q_size = 10, nb_worker=5, pickle_safe = True)
     df = DataFrame(np.hstack([ids.reshape(-1, 1), y_pred]), columns=['listing_id'] + OUTPUT_COLS)
     df['listing_id'] = df['listing_id'].astype('int')
     df.to_csv(save_to, index=False)

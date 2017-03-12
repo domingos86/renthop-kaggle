@@ -374,21 +374,9 @@ class PhotoLoader(object):
         else:
             images = np.zeros((self.data.shape[0], 3, 100, 100), dtype = np.float32)
             for i, row in enumerate(self.data.iterrows()):
-                images[i] = self._get_image(row[1]['listing_id'], row[1]['photo_name'])
+                images[i] = _get_image(row[1]['listing_id'], row[1]['photo_name'])
             images = images / 255.0
             return images
-    
-    @staticmethod
-    def _get_image(listing_id, photo_name):
-        if len(photo_name) == 0:
-            return np.zeros((3, 100, 100))
-        path = 'data/images_compressed/%d/%d/%s' % (listing_id / 1000,
-                        listing_id, photo_name)
-        im = Image.open(path)
-        pixels = np.array(im.getdata()).reshape(10000, -1).swapaxes(0, 1).reshape(-1, 100, 100)
-        if pixels.shape[0] == 1:
-            pixels = np.repeat(pixels, 3, axis = 0)
-        return pixels.astype(np.float32)
 
     def __getstate__(self):
         odict = self.__dict__.copy()
@@ -397,6 +385,25 @@ class PhotoLoader(object):
 
     def __setstate__(self, idict):
         self.__dict__.update(idict)
+
+class PhotoLoaderGenerator(object):
+    def __call__(self, data):
+        images = np.zeros((data.shape[0], 3, 100, 100), dtype = np.float32)
+        for i, row in enumerate(data.iterrows()):
+            images[i] = _get_image(row[1]['listing_id'], row[1]['photo_name'])
+        images = images / 255.0
+        return images
+
+def _get_image(listing_id, photo_name):
+    if len(photo_name) == 0:
+        return np.zeros((3, 100, 100))
+    path = 'data/images_compressed/%d/%d/%s' % (listing_id / 1000,
+                    listing_id, photo_name)
+    im = Image.open(path)
+    pixels = np.array(im.getdata()).reshape(10000, -1).swapaxes(0, 1).reshape(-1, 100, 100)
+    if pixels.shape[0] == 1:
+        pixels = np.repeat(pixels, 3, axis = 0)
+    return pixels.astype(np.float32)
 
 class DateTimeExtractor(object):
     operations = {
@@ -497,3 +504,16 @@ class LogTransform(object):
             return data
         else:
             return data.applymap(lambda x: np.log(x+1))
+
+class SeparateKey(object):
+    
+    def __init__(self, key_to_separate):
+        self.key = key_to_separate
+    
+    def __call__(self, data):
+        if self.key in data:
+            y = data[self.key]
+            del data[self.key]
+            return data, y
+        else:
+            return data
