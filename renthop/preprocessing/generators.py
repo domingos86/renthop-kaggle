@@ -2,7 +2,7 @@ import threading
 
 import loaders as l
 
-import shuffle, subset
+from . import shuffle, subset
 
 class Generator(object):
     
@@ -13,7 +13,7 @@ class Generator(object):
         self.data = None
         self.state = {'prepared': False}
     
-    def prepare(test = False, batch_size = 128, valid_size = None):
+    def prepare(self, test = False, batch_size = 128, valid_size = None):
         self.data = self.preprocessor.load_and_transform(test)
         if not test:
             self.data = shuffle(self.data)

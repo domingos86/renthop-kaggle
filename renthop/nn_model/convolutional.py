@@ -84,7 +84,7 @@ def fit_generator(train_generator, valid_generator = None, plot=False,
     earlystopping = EarlyStopping(patience = 50)
     checkpoint = ModelCheckpoint(save_to + 'net.h5', save_best_only = True)
     logger = CSVLogger(save_to + 'history.log')
-    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 10)
+    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 20)
     callbacks = [checkpoint, logger, earlystopping, lrreducer]
     
     history = net.fit_generator(train_generator, train_generator.n_samples(),

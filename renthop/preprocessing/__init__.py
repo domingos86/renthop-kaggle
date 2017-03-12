@@ -2,7 +2,7 @@
 
 from sklearn.utils import shuffle as skshuffle
 
-def shuffle(X, y):
+def shuffle(X, y = None):
     if isinstance(X, dict):
         to_shuffle = X.values()
         if y is not None:
@@ -17,7 +17,7 @@ def shuffle(X, y):
 
 def subset(X, y = None, slicer = slice(None, None)):
     if isinstance(X, dict):
-        sliced = X
+        sliced = X.copy()
         for key in sliced:
             sliced[key] = subset(sliced[key], slicer = slicer)
         if y is not None:
