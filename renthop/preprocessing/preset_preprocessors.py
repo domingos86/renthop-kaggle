@@ -210,3 +210,19 @@ def generator_cover_features_sentiment_manager_sharpness_preprocessor():
     preprocessor.add_operation(l.ToNdarray(dtype = np.int64))
     generator = Generator(preprocessor, {'photo_cover': l.PhotoLoaderGenerator()}, l.SeparateKey('response'))
     return generator
+
+def photos_generator():
+    images_info_loader = l.CSVLoader('data/images_train.csv', 'data/images_test.csv')
+    preprocessor.with_pipeline('photo_stats').set_loader(inages_info_loader.select_loader(['width', 'height', 'sharpness']))
+    preprocessor.add_operation(l.LogTransform(['sharpness'])).add_operation(l.ToNdarray())
+    preprocessor.add_operation(preprocessing.StandardScaler())
+    preprocessor.with_pipeline('images_origin').set_loader(images_info_loader.select_loader(['listing_id']), only_train = True)
+    merger = l.PandasColumnMerger(['images_origin', 'interest_level'], on = 'listing_id', how = 'left')
+    preprocessor.set_consumer(merger)
+    preprocessor.with_pipeline('interest_level').set_loader(l.JSONLoader().select_loader(['listing_id', 'interest_level']), only_train = True)
+    preprocessor.set_consumer(merger)
+    preprocessor.with_pipeline('response').set_loader(merger, only_train = True).add_operation(l.DropColumn('listing_id'))
+    preprocessor.add_operation(l.Dummifier(output_cols = ['high', 'medium', 'low'])).add_operation(l.ToNdarray())
+    preprocessor.with_pipeline('photo').set_loader(images_info_loader.select_loader(['listing_id', 'photo_name']))
+    generator = Generator(preprocessor, {'photo': l.PhotoLoaderGenerator()}, l.SeparateKey('response'))
+    return generator

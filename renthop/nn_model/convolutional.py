@@ -75,7 +75,7 @@ def fit_generator(train_generator, valid_generator = None, plot=False,
         training history and network are saved.
     '''
     
-    net = neural_net2()
+    net = neural_net_photo()
     
     if not os.path.exists(save_to):
         os.makedirs(save_to)
@@ -167,6 +167,28 @@ def neural_net2(initial_rate=0.04):
     adadelta = Adadelta(lr = initial_rate)
     net2.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
     return net2
+
+def neural_net_photo(initial_rate=0.04):
+    photo = Sequential()
+    photo.add(InputLayer((3, 100, 100), name = 'photo')) #3*100*100
+    photo.add(Convolution2D(32, 5, 5, activation = 'relu')) #32*96*96
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #32*48*48
+    photo.add(Convolution2D(64, 3, 3, activation = 'relu')) #64*46*46
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #64*23*23
+    photo.add(Convolution2D(64, 4, 4, activation = 'relu')) #64*20*20
+    photo.add(MaxPooling2D(pool_size = (2, 2))) #64*10*10
+    photo.add(Flatten())
+    img_size = Sequential()
+    img_size.add(InputLayer((3,), name = 'photo_stats'))
+    img_merged = Sequential()
+    img_merged.add(Merge([photo, img_size], mode = 'concat')) #6403
+    img_merged.add(Dense(1000, activation = 'relu')) #1000
+    img_merged.add(Dropout(0.5))
+    img_merged.add(Dense(20, activation = 'relu')) #200
+    img_merged.add(Dense(3, activation = 'softmax'))
+    adadelta = Adadelta(lr = initial_rate)
+    img_merged.compile(optimizer = adadelta, loss = 'categorical_crossentropy')
+    return img_merged
 
 def predict(net, X, ids, photo_data, save_to='submission.csv', load_batch_size = 1000):
     photo_loader = loaders.PhotoLoader()
