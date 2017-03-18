@@ -62,7 +62,8 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
     return net, history
     
 def fit_generator(train_generator, valid_generator = None, plot=False,
-                        epochs=3000, save_to='nn_trained'):
+                        epochs=3000, save_to='nn_trained',
+                        lr_reduce_after = 20, early_stopping = 50):
     '''Trains a neural network for all the labels.
         
     Keyword arguments:
@@ -81,10 +82,10 @@ def fit_generator(train_generator, valid_generator = None, plot=False,
         os.makedirs(save_to)
     save_to = save_to + '/'
     
-    earlystopping = EarlyStopping(patience = 50)
+    earlystopping = EarlyStopping(patience = early_stopping)
     checkpoint = ModelCheckpoint(save_to + 'net.h5', save_best_only = True)
     logger = CSVLogger(save_to + 'history.log')
-    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 20)
+    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = lr_reduce_after)
     callbacks = [checkpoint, logger, earlystopping, lrreducer]
     
     history = net.fit_generator(train_generator, train_generator.n_samples(),
@@ -173,16 +174,19 @@ def neural_net_photo(initial_rate=0.04):
     photo.add(InputLayer((3, 100, 100), name = 'photo')) #3*100*100
     photo.add(Convolution2D(32, 5, 5, activation = 'relu')) #32*96*96
     photo.add(MaxPooling2D(pool_size = (2, 2))) #32*48*48
+    photo.add(Dropout(0.25))
     photo.add(Convolution2D(64, 3, 3, activation = 'relu')) #64*46*46
     photo.add(MaxPooling2D(pool_size = (2, 2))) #64*23*23
+    photo.add(Dropout(0.25))
     photo.add(Convolution2D(64, 4, 4, activation = 'relu')) #64*20*20
     photo.add(MaxPooling2D(pool_size = (2, 2))) #64*10*10
+    photo.add(Dropout(0.25))
     photo.add(Flatten())
     img_size = Sequential()
     img_size.add(InputLayer((3,), name = 'photo_stats'))
     img_merged = Sequential()
     img_merged.add(Merge([photo, img_size], mode = 'concat')) #6403
-    img_merged.add(Dense(1000, activation = 'relu')) #1000
+    img_merged.add(Dense(500, activation = 'relu')) #500
     img_merged.add(Dropout(0.5))
     img_merged.add(Dense(20, activation = 'relu')) #20
     img_merged.add(Dense(3, activation = 'softmax'))
