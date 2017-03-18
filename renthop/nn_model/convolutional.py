@@ -184,7 +184,7 @@ def neural_net_photo(initial_rate=0.04):
     img_merged.add(Merge([photo, img_size], mode = 'concat')) #6403
     img_merged.add(Dense(1000, activation = 'relu')) #1000
     img_merged.add(Dropout(0.5))
-    img_merged.add(Dense(20, activation = 'relu')) #200
+    img_merged.add(Dense(20, activation = 'relu')) #20
     img_merged.add(Dense(3, activation = 'softmax'))
     adadelta = Adadelta(lr = initial_rate)
     img_merged.compile(optimizer = adadelta, loss = 'categorical_crossentropy')

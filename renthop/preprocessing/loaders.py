@@ -505,6 +505,34 @@ class LogTransform(object):
         else:
             return data.applymap(lambda x: np.log(x+1))
 
+class GroupByAggregate(object):
+    
+    def __init__(self, by, aggregator, reset_index = True):
+        self.by = by
+        self.aggregator = aggregator
+        self.reset_index = reset_index
+    
+    def fit(self, data):
+        pass
+    
+    def transform(self, data):
+        result = data.groupby(self.by).aggregate(self.aggregator)
+        if self.reset_index:
+            return result.reset_index()
+        else:
+            return result
+
+class FillNA(object):
+    
+    def __init__(self, fill_value = 0.0):
+        self.fill_value = fill_value
+    
+    def fit(self, data):
+        pass
+    
+    def transform(self, data):
+        return data.fillna(self.fill_value)
+
 class SeparateKey(object):
     
     def __init__(self, key_to_separate):
