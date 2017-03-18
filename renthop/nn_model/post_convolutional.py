@@ -24,7 +24,8 @@ import theano
 
 OUTPUT_COLS = ['high', 'medium', 'low']
 
-def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
+def fit(X, y, plot=False, epochs=3000, save_to='nn_trained',
+            lr_reduce_after = 20, early_stopping = 50):
     '''Trains a neural network for all the labels.
         
     Keyword arguments:
@@ -45,10 +46,10 @@ def fit(X, y, plot=False, epochs=3000, save_to='nn_trained'):
         os.makedirs(save_to)
     save_to = save_to + '/'
     
-    earlystopping = EarlyStopping(patience = 20)
+    earlystopping = EarlyStopping(patience = early_stopping)
     checkpoint = ModelCheckpoint(save_to + 'net.h5', save_best_only = True)
     logger = CSVLogger(save_to + 'history.log')
-    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = 10)
+    lrreducer = ReduceLROnPlateau(factor = 0.2, patience = lr_reduce_after)
     callbacks = [checkpoint, logger, earlystopping, lrreducer]
     
     history = net.fit(X, y, nb_epoch = epochs, batch_size = 128,
